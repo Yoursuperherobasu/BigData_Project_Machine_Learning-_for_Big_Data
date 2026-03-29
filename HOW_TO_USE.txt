@@ -1,0 +1,104 @@
+================================================================================
+HOW TO USE THIS CODEBASE (after cloning from GitHub)
+================================================================================
+
+See README.md and Spark_LSH_Wikipedia_plan.md for overview. This file mirrors
+HOW_TO_USE.md in plain text.
+
+--------------------------------------------------------------------------------
+1. CLONE
+--------------------------------------------------------------------------------
+
+  git clone <your-repo-url>
+  cd BigData_Project_Machine_Learning-_for_Big_Data
+
+--------------------------------------------------------------------------------
+2. PREREQUISITES
+--------------------------------------------------------------------------------
+
+  - Java 11 or 17; Spark that matches pip pyspark version
+  - Python 3.10-3.12 recommended
+  - HDFS client tools if using hdfs://
+
+  python3.12 -m venv .venv
+  source .venv/bin/activate
+  pip install -r requirements.txt
+  pip install -e .
+
+  First run downloads spark-xml via Maven (network once).
+
+--------------------------------------------------------------------------------
+3. DATA (NOT IN GIT)
+--------------------------------------------------------------------------------
+
+  https://dumps.wikimedia.org  -> enwiki-*-pages-articles*.xml.bz2 or multistream
+
+  hdfs dfs -mkdir -p /user/<you>/wikipedia
+  hdfs dfs -put /local/file.xml.bz2 /user/<you>/wikipedia/
+
+--------------------------------------------------------------------------------
+4. MAIN PIPELINE
+--------------------------------------------------------------------------------
+
+  chmod +x scripts/spark_submit.sh
+  export SPARK_MASTER=local[*]
+
+  ./scripts/spark_submit.sh \
+    --input file:///ABSOLUTE/path/to/dump.xml.bz2 \
+    --output file:///ABSOLUTE/path/to/out_pairs \
+    --sample-fraction 0.05 \
+    --num-partitions 64
+
+  HDFS example: use hdfs://namenode:8020/... for --input and --output
+
+  Output Parquet: page_id_a, title_a, page_id_b, title_b, jaccardDist
+
+  Flags: --num-hash-tables, --jaccard-distance-threshold,
+         --spark-xml-package (Scala 2.13 vs 2.12)
+
+--------------------------------------------------------------------------------
+5. SCALABILITY JSON
+--------------------------------------------------------------------------------
+
+  ./scripts/spark_submit.sh \
+    --input file:///path/to/dump.xml.bz2 \
+    --eval-scaling \
+    --scaling-fractions 0.01,0.02,0.05,0.1 \
+    --metrics-json ./metrics_scaling.json
+
+--------------------------------------------------------------------------------
+6. ACCURACY (SMALL SAMPLE)
+--------------------------------------------------------------------------------
+
+  ./scripts/spark_submit.sh \
+    --input file:///path/to/dump.xml.bz2 \
+    --eval-accuracy \
+    --sample-fraction 0.0001 \
+    --max-docs-bruteforce 400 \
+    --metrics-json ./metrics_accuracy.json
+
+--------------------------------------------------------------------------------
+7. TESTS
+--------------------------------------------------------------------------------
+
+  pytest tests/test_evaluate_pure.py -q
+
+  export RUN_SPARK_INTEGRATION=1
+  pytest tests/test_spark_smoke.py -v
+
+--------------------------------------------------------------------------------
+8. REPORT / REPRODUCIBILITY
+--------------------------------------------------------------------------------
+
+  Log Spark/Python versions, master, input URI, sample fraction, LSH params,
+  runtimes, shuffle metrics, candidate counts.
+
+--------------------------------------------------------------------------------
+9. TROUBLESHOOTING
+--------------------------------------------------------------------------------
+
+  JVM/Py4J errors: match pyspark to cluster Spark; fix SPARK_HOME conflicts.
+  OOM: smaller sample, more partitions, more executor memory.
+  spark-xml: set SPARK_XML_COORD or --spark-xml-package for _2.12 vs _2.13.
+
+================================================================================
