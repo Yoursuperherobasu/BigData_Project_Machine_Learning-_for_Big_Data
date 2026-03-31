@@ -9,7 +9,7 @@ HOW_TO_USE.md in plain text.
 1. CLONE
 --------------------------------------------------------------------------------
 
-  git clone <your-repo-url>
+  git clone https://github.com/Yoursuperherobasu/BigData_Project_Machine_Learning-_for_Big_Data.git
   cd BigData_Project_Machine_Learning-_for_Big_Data
 
 --------------------------------------------------------------------------------
@@ -17,7 +17,7 @@ HOW_TO_USE.md in plain text.
 --------------------------------------------------------------------------------
 
   - Java 11 or 17; Spark that matches pip pyspark version
-  - Python 3.10-3.12 recommended
+  - Python 3.10-3.12 recommended (3.13 has issues with PySpark)
   - HDFS client tools if using hdfs://
 
   python3.12 -m venv .venv
@@ -27,17 +27,56 @@ HOW_TO_USE.md in plain text.
 
   First run downloads spark-xml via Maven (network once).
 
+  IMPORTANT: If your SPARK_HOME points to a different Spark version than
+  pip pyspark, unset it:  env -u SPARK_HOME streamlit run app.py
+
 --------------------------------------------------------------------------------
 3. DATA (NOT IN GIT)
 --------------------------------------------------------------------------------
 
   https://dumps.wikimedia.org  -> enwiki-*-pages-articles*.xml.bz2 or multistream
 
+  You can also upload datasets directly through the Streamlit web UI.
+
+  HDFS upload:
   hdfs dfs -mkdir -p /user/<you>/wikipedia
   hdfs dfs -put /local/file.xml.bz2 /user/<you>/wikipedia/
 
 --------------------------------------------------------------------------------
-4. MAIN PIPELINE
+4. WEB UI (RECOMMENDED - EASIEST WAY)
+--------------------------------------------------------------------------------
+
+  source .venv/bin/activate
+  streamlit run app.py
+
+  Opens at http://localhost:8501 with five modes:
+
+  RUN PIPELINE:
+  - Upload a .xml or .bz2 file, or select one from the project folder
+  - Set sample % (how much data to use), hash tables, distance threshold
+  - Click Run -> results shown as table, downloadable as CSV
+
+  JACCARD CALCULATOR:
+  - Enter two sets of words, see similarity and distance
+
+  TEXT COMPARISON:
+  - Enter multiple documents, find near-duplicate pairs
+
+  VIEW RESULTS:
+  - Load metrics JSON from previous runs (accuracy or scaling)
+
+  ABOUT:
+  - Project info and parameters
+
+  APPROXIMATE RUNTIMES (single machine, ~100K articles):
+    1%  (~1,000 articles)   ->  1-2 min
+    5%  (~5,000 articles)   ->  3-5 min
+    10% (~10,000 articles)  ->  5-8 min
+    50% (~50,000 articles)  ->  15-25 min
+    100% (~100,000 articles) -> 30-50 min
+
+--------------------------------------------------------------------------------
+5. MAIN PIPELINE (CLI)
 --------------------------------------------------------------------------------
 
   chmod +x scripts/spark_submit.sh
@@ -53,11 +92,12 @@ HOW_TO_USE.md in plain text.
 
   Output Parquet: page_id_a, title_a, page_id_b, title_b, jaccardDist
 
-  Flags: --num-hash-tables, --jaccard-distance-threshold,
+  Flags: --sample-fraction (0.05 = 5% of articles)
+         --num-hash-tables, --jaccard-distance-threshold,
          --spark-xml-package (Scala 2.13 vs 2.12)
 
 --------------------------------------------------------------------------------
-5. SCALABILITY JSON
+6. SCALABILITY JSON
 --------------------------------------------------------------------------------
 
   ./scripts/spark_submit.sh \
@@ -66,8 +106,10 @@ HOW_TO_USE.md in plain text.
     --scaling-fractions 0.01,0.02,0.05,0.1 \
     --metrics-json ./metrics_scaling.json
 
+  Or use "Scaling study" mode in the Streamlit UI.
+
 --------------------------------------------------------------------------------
-6. ACCURACY (SMALL SAMPLE)
+7. ACCURACY (SMALL SAMPLE)
 --------------------------------------------------------------------------------
 
   ./scripts/spark_submit.sh \
@@ -77,28 +119,32 @@ HOW_TO_USE.md in plain text.
     --max-docs-bruteforce 400 \
     --metrics-json ./metrics_accuracy.json
 
+  Or use "Accuracy evaluation" mode in the Streamlit UI.
+
 --------------------------------------------------------------------------------
-7. TESTS
+8. TESTS
 --------------------------------------------------------------------------------
 
   pytest tests/test_evaluate_pure.py -q
 
-  export RUN_SPARK_INTEGRATION=1
-  pytest tests/test_spark_smoke.py -v
+  env -u SPARK_HOME RUN_SPARK_INTEGRATION=1 pytest tests/test_spark_smoke.py -v
 
 --------------------------------------------------------------------------------
-8. REPORT / REPRODUCIBILITY
+9. REPORT / REPRODUCIBILITY
 --------------------------------------------------------------------------------
 
   Log Spark/Python versions, master, input URI, sample fraction, LSH params,
   runtimes, shuffle metrics, candidate counts.
 
+  Project report: Project_Report.docx
+
 --------------------------------------------------------------------------------
-9. TROUBLESHOOTING
+10. TROUBLESHOOTING
 --------------------------------------------------------------------------------
 
-  JVM/Py4J errors: match pyspark to cluster Spark; fix SPARK_HOME conflicts.
-  OOM: smaller sample, more partitions, more executor memory.
+  JVM/Py4J errors: unset SPARK_HOME if it mismatches pip pyspark version.
+  OOM: smaller sample %, more partitions, more executor memory.
   spark-xml: set SPARK_XML_COORD or --spark-xml-package for _2.12 vs _2.13.
+  Streamlit not starting: make sure streamlit is installed (pip install -r requirements.txt).
 
 ================================================================================

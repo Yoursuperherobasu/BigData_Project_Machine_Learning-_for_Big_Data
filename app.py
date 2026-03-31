@@ -14,6 +14,8 @@ sys.path.insert(0, str(ROOT / "src"))
 import streamlit as st
 import time
 import json
+import subprocess
+import glob
 
 from wiki_near_dup.jaccard_utils import (
     jaccard_similarity_indices,
@@ -30,11 +32,182 @@ st.write("---")
 
 # sidebar
 st.sidebar.header("Settings")
-mode = st.sidebar.radio("Choose mode:", ["Jaccard Calculator", "Text Comparison", "View Results", "About"])
+mode = st.sidebar.radio("Choose mode:", ["Run Pipeline", "Jaccard Calculator", "Text Comparison", "View Results", "About"])
+
+
+# ---- Run Pipeline ----
+if mode == "Run Pipeline":
+    st.header("Run Spark LSH Pipeline")
+    st.write("Select a Wikipedia XML dump and run the near-duplicate detection pipeline.")
+
+    # upload or pick existing file
+    data_source = st.radio("Dataset source:", ["Upload file", "Use existing file", "Enter path manually"])
+
+    dataset_path = ""
+
+    if data_source == "Upload file":
+        uploaded = st.file_uploader("Upload a Wikipedia XML or .xml.bz2 file", type=["xml", "bz2"])
+        if uploaded:
+            save_dir = ROOT / "data_uploads"
+            save_dir.mkdir(exist_ok=True)
+            save_path = save_dir / uploaded.name
+            with open(save_path, "wb") as f:
+                f.write(uploaded.getbuffer())
+            dataset_path = str(save_path)
+            st.success(f"Uploaded: {uploaded.name} ({uploaded.size / (1024*1024):.1f} MB)")
+
+    elif data_source == "Use existing file":
+        data_files = sorted(
+            glob.glob(str(ROOT / "*.bz2")) + glob.glob(str(ROOT / "*.xml"))
+            + glob.glob(str(ROOT / "data_uploads" / "*.bz2")) + glob.glob(str(ROOT / "data_uploads" / "*.xml"))
+        )
+        data_names = [os.path.basename(f) for f in data_files]
+        if data_files:
+            selected = st.selectbox("Select dataset file", data_names)
+            dataset_path = data_files[data_names.index(selected)]
+        else:
+            st.info("No .bz2 or .xml files found. Upload one or enter a path.")
+
+    else:
+        dataset_path = st.text_input("Dataset path (absolute)", value="")
+    output_dir = st.text_input("Output directory", value=str(ROOT / "out_ui"))
+
+    st.write("#### Parameters")
+    col1, col2 = st.columns(2)
+    with col1:
+        sample_pct = st.slider("Sample size (% of articles to use)", 1, 100, 5, 1)
+        sample_fraction = sample_pct / 100.0
+        st.caption(f"Will use ~{sample_pct}% of articles from the dataset.")
+        num_hash_tables = st.slider("Number of hash tables", 1, 20, 5)
+    with col2:
+        num_features = st.selectbox("Hash features", [2**16, 2**17, 2**18, 2**19], index=2)
+        jaccard_threshold = st.slider("Max Jaccard distance", 0.05, 1.0, 0.3, 0.05)
+
+    run_mode = st.radio("What to run:", ["Main pipeline (find duplicates)", "Accuracy evaluation", "Scaling study"])
+
+    if st.button("Run"):
+        if not dataset_path or not os.path.exists(dataset_path):
+            st.error("Dataset file not found. Please check the path.")
+        else:
+            # build the command
+            script = str(ROOT / "scripts" / "run_pipeline.py")
+            input_uri = f"file://{os.path.abspath(dataset_path)}"
+            cmd = [
+                sys.executable, script,
+                "--input", input_uri,
+                "--sample-fraction", str(sample_fraction),
+                "--num-features", str(num_features),
+                "--num-hash-tables", str(num_hash_tables),
+                "--jaccard-distance-threshold", str(jaccard_threshold),
+            ]
+
+            if run_mode == "Main pipeline (find duplicates)":
+                output_uri = f"file://{os.path.abspath(output_dir)}"
+                cmd += ["--output", output_uri]
+            elif run_mode == "Accuracy evaluation":
+                metrics_path = str(ROOT / "metrics_accuracy.json")
+                cmd += ["--eval-accuracy", "--metrics-json", metrics_path]
+            else:
+                metrics_path = str(ROOT / "metrics_scaling.json")
+                cmd += ["--eval-scaling", "--scaling-fractions", "0.01,0.02,0.05,0.1", "--metrics-json", metrics_path]
+
+            st.write("**Running command:**")
+            st.code(" ".join(cmd), language="bash")
+
+            with st.spinner("Running Spark pipeline... this may take a few minutes."):
+                # remove SPARK_HOME to avoid version mismatch
+                env = os.environ.copy()
+                env.pop("SPARK_HOME", None)
+                env["PYTHONPATH"] = str(ROOT / "src") + os.pathsep + env.get("PYTHONPATH", "")
+
+                result = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=600)
+
+            if result.returncode == 0:
+                st.success("Pipeline completed successfully!")
+
+                if run_mode == "Main pipeline (find duplicates)":
+                    st.write(f"Output saved to: `{output_dir}`")
+                    # read parquet and show results
+                    parquet_files = glob.glob(os.path.join(output_dir, "*.parquet"))
+                    if parquet_files:
+                        try:
+                            import pandas as pd
+                            dfs = [pd.read_parquet(f) for f in parquet_files]
+                            df = pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
+
+                            if len(df) == 0:
+                                st.info("No near-duplicate pairs found at this threshold.")
+                            else:
+                                st.write(f"### Near-Duplicate Pairs Found: {len(df)}")
+
+                                # summary metrics
+                                c1, c2, c3 = st.columns(3)
+                                c1.metric("Total Pairs", len(df))
+                                c2.metric("Avg Jaccard Distance", f"{df['jaccardDist'].mean():.4f}" if 'jaccardDist' in df.columns else "N/A")
+                                c3.metric("Min Jaccard Distance", f"{df['jaccardDist'].min():.4f}" if 'jaccardDist' in df.columns else "N/A")
+
+                                # show the table
+                                st.write("### Results Table")
+                                if 'jaccardDist' in df.columns:
+                                    df_display = df.sort_values('jaccardDist')
+                                else:
+                                    df_display = df
+                                st.dataframe(df_display.head(100), use_container_width=True)
+
+                                if len(df) > 100:
+                                    st.caption(f"Showing top 100 of {len(df)} pairs (sorted by distance).")
+
+                                # download button
+                                csv = df_display.to_csv(index=False)
+                                st.download_button("Download results as CSV", csv, "near_duplicates.csv", "text/csv")
+                        except Exception as e:
+                            st.warning(f"Could not read parquet output: {e}")
+                    else:
+                        st.info("No output files found.")
+
+                else:
+                    # show metrics for accuracy/scaling
+                    if os.path.exists(metrics_path):
+                        with open(metrics_path) as f:
+                            metrics = json.load(f)
+
+                        if run_mode == "Accuracy evaluation" and "precision" in metrics and metrics.get("precision") is not None:
+                            st.write("### Accuracy Results")
+                            c1, c2, c3 = st.columns(3)
+                            c1.metric("Precision", f"{metrics['precision']:.4f}")
+                            c2.metric("Recall", f"{metrics['recall']:.4f}")
+                            c3.metric("F1 Score", f"{metrics['f1']:.4f}")
+                            c4, c5, c6 = st.columns(3)
+                            c4.metric("True Positives", metrics.get('tp', 'N/A'))
+                            c5.metric("False Positives", metrics.get('fp', 'N/A'))
+                            c6.metric("False Negatives", metrics.get('fn', 'N/A'))
+                            st.write(f"Documents in sample: **{metrics.get('n_docs', 'N/A')}**")
+
+                        elif "scaling_runs" in metrics:
+                            st.write("### Scaling Study Results")
+                            import pandas as pd
+                            runs_df = pd.DataFrame(metrics["scaling_runs"])
+                            st.dataframe(runs_df, use_container_width=True)
+
+                            # simple chart
+                            if 'n_docs' in runs_df.columns and 'time_total_sec' in runs_df.columns:
+                                st.write("### Runtime vs Number of Documents")
+                                st.line_chart(runs_df.set_index('n_docs')['time_total_sec'])
+
+                        st.write("### Raw Metrics JSON")
+                        st.json(metrics)
+
+                if result.stdout.strip():
+                    with st.expander("Spark Output Log"):
+                        st.text(result.stdout[-3000:])
+            else:
+                st.error("Pipeline failed!")
+                with st.expander("Error details"):
+                    st.text(result.stderr[-3000:])
 
 
 # ---- Jaccard Calculator ----
-if mode == "Jaccard Calculator":
+elif mode == "Jaccard Calculator":
     st.header("Jaccard Similarity Calculator")
     st.write("Enter two sets of words to compute their Jaccard similarity and distance.")
 

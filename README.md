@@ -1,23 +1,25 @@
 # Scalable Near-Duplicate Detection on Wikipedia (Spark + LSH)
 
-Distributed near-duplicate document detection on large-scale Wikipedia text using **Apache Spark (PySpark)**, **MinHash**, and **Locality Sensitive Hashing (LSH)** on **Hadoop HDFS** (or local `file://` paths).
+Distributed near-duplicate document detection on large-scale Wikipedia text using **Apache Spark (PySpark)**, **MinHash**, and **Locality Sensitive Hashing (LSH)** on **Hadoop HDFS** (or local `file://` paths). Includes a **Streamlit web UI** for interactive exploration and pipeline execution.
 
 ## Team
 
 | Name          | Student ID  | Role (proposal) |
 |---------------|-------------|------------------|
-| Basu Singh    | M24AID0008  | Coding, QA review, documentation, GitHub repository |
+| Basu Singh    | M24AID008   | Coding, QA review, documentation, GitHub repository |
 | Nitin Jain    | M24AID022   | Project report, design and architecture, literature review |
-| Shashi Saurav | M24AID0048  | Design, coding, unit testing, version management |
+| Shashi Saurav | M24AID048   | Design, coding, unit testing, version management |
 
 ## Repository layout
 
 | Path | Purpose |
 |------|---------|
+| [app.py](app.py) | Streamlit web UI (run pipeline, Jaccard calculator, view results) |
 | [src/wiki_near_dup/](src/wiki_near_dup/) | Ingest (spark-xml), `HashingTF` features, `MinHashLSH`, evaluation helpers |
 | [scripts/run_pipeline.py](scripts/run_pipeline.py) | CLI: main job, `--eval-scaling`, `--eval-accuracy` |
 | [scripts/spark_submit.sh](scripts/spark_submit.sh) | Example `spark-submit` with `spark-xml` Maven coordinate |
 | [tests/](tests/) | Pytest (pure Jaccard utils + optional Spark smoke test) |
+| [Project_Report.docx](Project_Report.docx) | Project report |
 | [Spark_LSH_Wikipedia_plan.md](Spark_LSH_Wikipedia_plan.md) | Technical plan and evaluation notes |
 | [HOW_TO_USE.md](HOW_TO_USE.md) / [HOW_TO_USE.txt](HOW_TO_USE.txt) | Setup and run guide |
 
@@ -37,7 +39,26 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-## Run the pipeline
+## Quick start: Web UI (Streamlit)
+
+The easiest way to use the project is through the Streamlit web interface:
+
+```bash
+source .venv/bin/activate
+streamlit run app.py
+```
+
+This opens a browser at `http://localhost:8501` with five modes:
+
+- **Run Pipeline** — Select or upload a Wikipedia XML dump, configure parameters (sample %, hash tables, distance threshold), and run the Spark pipeline. Results are displayed as an interactive table with a CSV download option.
+- **Jaccard Calculator** — Enter two sets of words and compute their Jaccard similarity and distance.
+- **Text Comparison** — Enter multiple short documents and find near-duplicate pairs using brute-force Jaccard.
+- **View Results** — Load and display metrics JSON files from previous pipeline runs (accuracy or scaling study).
+- **About** — Project info, default parameters, and tech stack.
+
+**Important:** If your `SPARK_HOME` points to a different Spark version than pip-installed pyspark, unset it first: `env -u SPARK_HOME streamlit run app.py`
+
+## Run the pipeline (CLI)
 
 Use the wrapper script so **spark-xml** is on the classpath:
 
@@ -62,10 +83,20 @@ HDFS example:
 
 ### CLI options (high level)
 
-- `--sample-fraction` — fraction of articles after XML parse (for experiments).
+- `--sample-fraction` — fraction of articles after XML parse (e.g. 0.05 = 5% of articles). Use smaller values for faster runs.
 - `--num-features` — `HashingTF` space (default `2^18`).
 - `--num-hash-tables` — LSH band count (PySpark 3.5 exposes only this for `MinHashLSH`).
-- `--jaccard-distance-threshold` — max Jaccard **distance** (1 − similarity) for candidates.
+- `--jaccard-distance-threshold` — max Jaccard **distance** (1 - similarity) for candidates.
+
+### Approximate runtimes (single machine, ~100K articles)
+
+| Sample % | Articles | Estimated Time |
+|----------|----------|---------------|
+| 1%       | ~1,000   | 1-2 min       |
+| 5%       | ~5,000   | 3-5 min       |
+| 10%      | ~10,000  | 5-8 min       |
+| 50%      | ~50,000  | 15-25 min     |
+| 100%     | ~100,000 | 30-50 min     |
 
 ### Scalability study (JSON for report plots)
 
@@ -99,22 +130,21 @@ pytest tests/test_evaluate_pure.py -q
 Optional Spark + spark-xml integration (downloads JARs; needs working local Spark):
 
 ```bash
-export RUN_SPARK_INTEGRATION=1
-pytest tests/test_spark_smoke.py -v
+env -u SPARK_HOME RUN_SPARK_INTEGRATION=1 pytest tests/test_spark_smoke.py -v
 ```
 
 ## Dataset
 
 Wikipedia **pages-articles** XML (often `.xml.bz2`). Example multistream shard: `enwiki-20260301-pages-articles-multistream2.xml-p41243p151573.bz2`.
 
-Do **not** commit large `.bz2` files; use HDFS or local paths. See [.gitignore](.gitignore).
+Do **not** commit large `.bz2` files; use HDFS or local paths. See [.gitignore](.gitignore). You can also upload datasets directly through the Streamlit UI.
 
 ## Matching Spark to `pyspark` from pip
 
 If you install Spark with `pip install pyspark`, use the **`spark-submit` inside that package** and **unset** a global `SPARK_HOME` that points to a different Spark version (otherwise you may see Scala/JVM errors or wrong Spark 4.x behavior):
 
 ```bash
-SUBMIT="$(python -c "import pyspark, os; print(os.path.join(os.path.dirname(pyspark.__file__), 'bin', 'spark-submit'))")"
+SUBMIT="$(python -c "import pyspark, os; print(os.path.join(os.path.dirname(pyspark.__file__), ‘bin’, ‘spark-submit’))")"
 env -u SPARK_HOME PYSPARK_PYTHON="$(which python)" "$SUBMIT" ...
 ```
 
@@ -125,10 +155,10 @@ Python **3.12** needs `setuptools` installed; `run_pipeline.py` imports it befor
 Default Maven coordinate: `com.databricks:spark-xml_2.12:0.18.0`. If your Spark is built with Scala **2.13**, set:
 
 ```bash
-export SPARK_XML_COORD='com.databricks:spark-xml_2.13:0.18.0'
+export SPARK_XML_COORD=’com.databricks:spark-xml_2.13:0.18.0’
 ./scripts/spark_submit.sh ...
 ```
 
 ## License / course use
 
-Academic project for **Machine Learning for Big Data**. Adapt usage to your institution’s policies.
+Academic project for **Machine Learning for Big Data**, IIT Jodhpur. M.Tech. in Data and Computational Sciences.

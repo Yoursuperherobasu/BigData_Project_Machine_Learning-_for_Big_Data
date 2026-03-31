@@ -16,8 +16,12 @@ build/
 *.bz2
 *.xml
 data/
+data_uploads/
 out/
+out_ui/
 output/
+metrics_*.json
+generate_report.py
 checkpoints/
 spark-warehouse/
 metastore_db/
