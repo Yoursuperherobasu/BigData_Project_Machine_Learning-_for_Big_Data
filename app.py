@@ -120,7 +120,7 @@ if mode == "Run Pipeline":
                 env.pop("SPARK_HOME", None)
                 env["PYTHONPATH"] = str(ROOT / "src") + os.pathsep + env.get("PYTHONPATH", "")
 
-                result = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=600)
+                result = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=3600)
 
             if result.returncode == 0:
                 st.success("Pipeline completed successfully!")
