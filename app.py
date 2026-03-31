@@ -106,10 +106,13 @@ if mode == "Run Pipeline":
                 cmd += ["--output", output_uri]
             elif run_mode == "Accuracy evaluation":
                 metrics_path = str(ROOT / "metrics_accuracy.json")
-                cmd += ["--eval-accuracy", "--metrics-json", metrics_path]
+                cmd += ["--eval-accuracy", "--max-docs-bruteforce", "5000", "--metrics-json", metrics_path]
             else:
+                fracs = "0.01,0.02,0.05"
+                if sample_fraction <= 0.10:
+                    fracs = f"{sample_fraction/4:.4f},{sample_fraction/2:.4f},{sample_fraction:.4f}"
                 metrics_path = str(ROOT / "metrics_scaling.json")
-                cmd += ["--eval-scaling", "--scaling-fractions", "0.01,0.02,0.05,0.1", "--metrics-json", metrics_path]
+                cmd += ["--eval-scaling", "--scaling-fractions", fracs, "--metrics-json", metrics_path]
 
             st.write("**Running command:**")
             st.code(" ".join(cmd), language="bash")
