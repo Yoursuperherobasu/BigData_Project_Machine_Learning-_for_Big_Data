@@ -41,12 +41,12 @@ if mode == "Run Pipeline":
     st.write("Select a Wikipedia XML dump and run the near-duplicate detection pipeline.")
 
     # upload or pick existing file
-    data_source = st.radio("Dataset source:", ["Upload file", "Use existing file", "Enter path manually"])
+    data_source = st.radio("Dataset source:", ["Use existing file", "Upload file", "Enter path manually"])
 
     dataset_path = ""
 
     if data_source == "Upload file":
-        uploaded = st.file_uploader("Upload a Wikipedia XML or .xml.bz2 file", type=["xml", "bz2"])
+        uploaded = st.file_uploader("Upload a Wikipedia XML or .xml.bz2 file (max 1 GB)", type=["xml", "bz2"])
         if uploaded:
             save_dir = ROOT / "data_uploads"
             save_dir.mkdir(exist_ok=True)
