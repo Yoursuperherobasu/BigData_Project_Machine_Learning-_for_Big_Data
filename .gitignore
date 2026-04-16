@@ -35,3 +35,15 @@ _SUCCESS
 .DS_Store
 .idea/
 .vscode/
+
+# Local-only reference docs and test scaffolding (not part of submission)
+HOW_TO_USE.md
+HOW_TO_USE.txt
+Spark_LSH_Wikipedia_plan.md
+SESSION_NOTES.md
+tests/
+out_smoke/
+.gitattributes
+
+# Local LaTeX build for Overleaf (not to be pushed)
+latex_report/
