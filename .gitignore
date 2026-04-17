@@ -22,6 +22,7 @@ out_ui/
 output/
 metrics_*.json
 generate_report.py
+generate_report_simple.py
 checkpoints/
 spark-warehouse/
 metastore_db/
@@ -35,6 +36,7 @@ _SUCCESS
 .DS_Store
 .idea/
 .vscode/
+~$*
 
 # Local-only reference docs and test scaffolding (not part of submission)
 HOW_TO_USE.md
