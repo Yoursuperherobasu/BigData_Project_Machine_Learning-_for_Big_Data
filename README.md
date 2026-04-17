@@ -6,11 +6,11 @@ Distributed near-duplicate document detection on large-scale Wikipedia text usin
 
 ## Team
 
-| Name          | Student ID  | Role (proposal) |
-|---------------|-------------|------------------|
-| Basu Singh    | M24AID008   | Coding, QA review, documentation, GitHub repository |
-| Nitin Jain    | M24AID022   | Project report, design and architecture, literature review |
-| Shashi Saurav | M24AID048   | Design, coding, unit testing, version management |
+| Name          | Student ID  | Contribution |
+|---------------|-------------|--------------|
+| Basu Singh    | M24AID008   | Pipeline implementation (ingest, features, LSH, evaluation modules), Streamlit web UI, CLI scripts, GitHub repository setup, documentation (README, setup guides) |
+| Nitin Jain    | M24AID022   | Literature review and research on MinHash/LSH theory, project report writing and formatting, system architecture and design decisions, experimental analysis and result interpretation |
+| Shashi Saurav | M24AID048   | Unit and integration test development, code review and quality assurance, dataset preparation and preprocessing validation, version management and environment setup (Python/Spark compatibility) |
 
 ## Repository layout
 
@@ -20,7 +20,8 @@ Distributed near-duplicate document detection on large-scale Wikipedia text usin
 | [src/wiki_near_dup/](src/wiki_near_dup/) | Ingest (spark-xml), `HashingTF` features, `MinHashLSH`, evaluation helpers |
 | [scripts/run_pipeline.py](scripts/run_pipeline.py) | CLI: main job, `--eval-scaling`, `--eval-accuracy` |
 | [scripts/spark_submit.sh](scripts/spark_submit.sh) | Example `spark-submit` with `spark-xml` Maven coordinate |
-| [Project_Report.docx](Project_Report.docx) | Project report |
+| [Project_Report.docx](Project_Report.docx) | Project report (DOCX) |
+| [Project_Report.pdf](Project_Report.pdf) | Project report (PDF) |
 
 ---
 
