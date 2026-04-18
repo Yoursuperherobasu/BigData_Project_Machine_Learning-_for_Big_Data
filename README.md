@@ -20,8 +20,8 @@ Distributed near-duplicate document detection on large-scale Wikipedia text usin
 | [src/wiki_near_dup/](src/wiki_near_dup/) | Ingest (spark-xml), `HashingTF` features, `MinHashLSH`, evaluation helpers |
 | [scripts/run_pipeline.py](scripts/run_pipeline.py) | CLI: main job, `--eval-scaling`, `--eval-accuracy` |
 | [scripts/spark_submit.sh](scripts/spark_submit.sh) | Example `spark-submit` with `spark-xml` Maven coordinate |
-| [Project_Report.docx](Project_Report.docx) | Project report (DOCX) |
-| [Project_Report.pdf](Project_Report.pdf) | Project report (PDF) |
+| [Project_Report_final.docx](Project_Report_final.docx) | Project report (DOCX) |
+| [Project_Report_final.pdf](Project_Report_final.pdf) | Project report (PDF) |
 | [Project_Presentation_final.pptx](Project_Presentation_final.pptx) | Project presentation slides |
 | [Project_Presentation.pdf](Project_Presentation.pdf) | Project presentation (PDF) |
 
