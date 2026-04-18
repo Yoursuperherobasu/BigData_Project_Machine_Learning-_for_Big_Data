@@ -9,7 +9,7 @@ Distributed near-duplicate document detection on large-scale Wikipedia text usin
 | Name          | Student ID  | Contribution |
 |---------------|-------------|--------------|
 | Basu Singh    | M24AID008   | Pipeline implementation (ingest, features, LSH, evaluation modules), Streamlit web UI, CLI scripts, GitHub repository setup, documentation (README, setup guides) |
-| Nitin Jain    | M24AID022   | Literature review and research on MinHash/LSH theory, project report writing and formatting, system architecture and design decisions, experimental analysis and result interpretation |
+| Nitin Jain    | M24AID022   | Project Report, literature review, system architecture and design specifications, experimental analysis, testing and result interpretation |
 | Shashi Saurav | M24AID048   | Unit and integration test development, code review and quality assurance, dataset preparation and preprocessing validation, version management and environment setup (Python/Spark compatibility) |
 
 ## Repository layout
@@ -53,7 +53,7 @@ Before cloning, make sure the following are installed on your machine:
   - Check: `git --version`
 - **Internet access** on first run (Spark downloads the `spark-xml` JAR from Maven Central).
 
-Optional (only if you plan to run on a Hadoop cluster):
+Optional (only if you plan to run it on a Hadoop cluster):
 - **Apache Spark** whose version matches the `pyspark` pinned in `requirements.txt` (3.4–3.5.x).
 - **Hadoop HDFS** client tools (`hdfs dfs`).
 
@@ -213,4 +213,4 @@ env -u SPARK_HOME PYSPARK_PYTHON="$(which python)" "$SUBMIT" ...
 
 ## License / course use
 
-Academic project for **Machine Learning for Big Data**, IIT Jodhpur. M.Tech. in Data and Computational Sciences.
+Academic project for **Machine Learning for Big Data**, IIT Jodhpur. M.Tech. in Data and Computational Sciences
