@@ -2,7 +2,7 @@
 
 Distributed near-duplicate document detection on large-scale Wikipedia text using **Apache Spark (PySpark)**, **MinHash**, and **Locality Sensitive Hashing (LSH)** on **Hadoop HDFS** (or local `file://` paths). Includes a **Streamlit web UI** for interactive exploration and pipeline execution.
 
-> **Dataset notice:** The Wikipedia XML dump is **not committed to this repository** — the files are too large for GitHub (hundreds of MB to several GB). Download it yourself from [dumps.wikimedia.org](https://dumps.wikimedia.org) or upload via the Streamlit UI. See **Step 5** below.
+> **Dataset notice:** The Wikipedia XML dump is **not committed to this repository** — the files are too large for GitHub (hundreds of MB to several GB). Download it yourself from [dumps.wikimedia.org](https://dumps.wikimedia.org) or upload via the Streamlit UI (See **Step 5** below).
 
 ## Team
 
