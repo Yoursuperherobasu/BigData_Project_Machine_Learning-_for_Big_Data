@@ -22,7 +22,8 @@ Distributed near-duplicate document detection on large-scale Wikipedia text usin
 | [scripts/spark_submit.sh](scripts/spark_submit.sh) | Example `spark-submit` with `spark-xml` Maven coordinate |
 | [Project_Report.docx](Project_Report.docx) | Project report (DOCX) |
 | [Project_Report.pdf](Project_Report.pdf) | Project report (PDF) |
-| [Project_Presentation.pptx](Project_Presentation.pptx) | Project presentation slides |
+| [Project_Presentation_final.pptx](Project_Presentation_final.pptx) | Project presentation slides |
+| [Project_Presentation.pdf](Project_Presentation.pdf) | Project presentation (PDF) |
 
 ---
 
